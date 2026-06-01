@@ -175,6 +175,7 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
 <script>
 const SKEY='spingarn_polla2026v5';
 const SHEET_ID='1Ilu6MbqXPi9HhoIMw5yZzmznJ82cHtKxy8FiOlV8XF4';
+const API_URL='https://script.google.com/macros/s/AKfycbw4JoEVkRcn2rSeLl-I-CiJIYMSUTGQv3B7GjMvkyTz9hvCrdMRouZryYJAS2uv8a0aDw/exec';
 const ADMIN_PASS='Spingarn2026#';
 
 const COUNTRY_FLAGS = {
@@ -380,14 +381,54 @@ function renderLogin(main){
   main.appendChild(w);
 }
 
-function doLogin(){
+async function doLogin(){
+
   const name=document.getElementById('loginName').value.trim();
   const err=document.getElementById('loginErr');
-  if(!name||name.length<2){err.style.display='block';err.textContent='Escribe tu nombre (mínimo 2 caracteres)';return;}
-  if(!ST.users.includes(name)){ST.users.push(name);saveSt(ST);}
-  CU=name; TAB='predict'; render();
-}
 
+  if(!name || name.length<2){
+    err.style.display='block';
+    err.textContent='Escribe tu nombre (mínimo 2 caracteres)';
+    return;
+  }
+
+  if(!ST.users.includes(name)){
+    ST.users.push(name);
+  }
+
+  CU=name;
+
+  try{
+
+    const r = await fetch(
+      API_URL + '?user=' + encodeURIComponent(name)
+    );
+
+    const rows = await r.json();
+
+    ST.predictions[name] = {};
+
+    rows.forEach(row=>{
+
+      ST.predictions[name][row[1]] = {
+        result: row[2],
+        scoreH: row[3],
+        scoreA: row[4]
+      };
+
+    });
+
+  }catch(e){
+    console.error(e);
+    showToast('⚠️ No se pudieron cargar datos de la nube');
+  }
+
+  saveSt(ST);
+
+  TAB='predict';
+
+  render();
+}
 function doLogout(){CU=null;render();}
 
 function renderUserBar(main){
@@ -499,7 +540,29 @@ function setPredScore(mid, side, val){
   saveSt(ST);
 }
 
-function savePreds(){ saveSt(ST); showToast('✅ Predicciones guardadas'); }
+async function savePreds(){
+
+  const preds = ST.predictions[CU] || {};
+
+  const payload = {
+    user: CU,
+    predictions: Object.entries(preds).map(([matchId,p])=>({
+      matchId,
+      result:p.result || '',
+      scoreH:p.scoreH || '',
+      scoreA:p.scoreA || ''
+    }))
+  };
+
+  await fetch(API_URL,{
+    method:'POST',
+    body:JSON.stringify(payload)
+  });
+
+  saveSt(ST);
+
+  showToast('✅ Predicciones guardadas en la nube');
+}
 
 function renderResults(content){
   const phases=[...new Set(ALL_MATCHES.map(m=>m.phase))];
