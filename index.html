@@ -175,7 +175,7 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
 <script>
 const SKEY='spingarn_polla2026v5';
 const SHEET_ID='1Ilu6MbqXPi9HhoIMw5yZzmznJ82cHtKxy8FiOlV8XF4';
-const API_URL='https://script.google.com/macros/s/AKfycbw4JoEVkRcn2rSeLl-I-CiJIYMSUTGQv3B7GjMvkyTz9hvCrdMRouZryYJAS2uv8a0aDw/exec';
+const API_URL='https://script.google.com/macros/s/AKfycbw6wPHeNA4sJJ-NIyUnqwCDjb65HYnZ6nPkCrgXEx-f25qkgU4WBw-2i2B2wtJI0i-SRw/exec';
 const ADMIN_PASS='Spingarn2026#';
 
 const COUNTRY_FLAGS = {
@@ -352,7 +352,9 @@ function render(){
   content.className='content tab-content';
   if(TAB==='predict') renderPredict(content);
   else if(TAB==='results') renderResults(content);
-  else if(TAB==='table') renderTable(content);
+  else if(TAB==='table'){
+  renderTable(content);
+}
   else if(TAB==='admin') renderAdmin(content);
   main.appendChild(content);
 }
@@ -392,16 +394,16 @@ async function doLogin(){
     return;
   }
 
-  if(!ST.users.includes(name)){
-    ST.users.push(name);
-  }
+  await syncCloudData();
 
   CU=name;
 
   try{
 
     const r = await fetch(
-      API_URL + '?user=' + encodeURIComponent(name)
+      API_URL +
+      '?action=loadUser&user=' +
+      encodeURIComponent(name)
     );
 
     const rows = await r.json();
@@ -419,8 +421,10 @@ async function doLogin(){
     });
 
   }catch(e){
+
     console.error(e);
     showToast('⚠️ No se pudieron cargar datos de la nube');
+
   }
 
   saveSt(ST);
@@ -429,6 +433,7 @@ async function doLogin(){
 
   render();
 }
+  
 function doLogout(){CU=null;render();}
 
 function renderUserBar(main){
@@ -545,8 +550,9 @@ async function savePreds(){
   const preds = ST.predictions[CU] || {};
 
   const payload = {
-    user: CU,
-    predictions: Object.entries(preds).map(([matchId,p])=>({
+    action:'savePredictions',
+    user:CU,
+    predictions:Object.entries(preds).map(([matchId,p])=>({
       matchId,
       result:p.result || '',
       scoreH:p.scoreH || '',
@@ -554,14 +560,16 @@ async function savePreds(){
     }))
   };
 
-  await fetch(API_URL,{
-    method:'POST',
-    body:JSON.stringify(payload)
-  });
+await fetch(API_URL,{
+  method:'POST',
+  body:JSON.stringify(payload)
+});
 
-  saveSt(ST);
+await syncCloudData();
 
-  showToast('✅ Predicciones guardadas en la nube');
+saveSt(ST);
+
+showToast('✅ Predicciones guardadas');
 }
 
 function renderResults(content){
@@ -600,7 +608,10 @@ function renderResults(content){
   });
 }
 
-function renderTable(content){
+async function renderTable(content){
+   
+  await syncCloudData();
+  
   if(!ST.users.length){
     content.innerHTML='<div class="alert-mag">Aún no hay participantes registrados.</div>';return;
   }
@@ -734,7 +745,52 @@ function renderAdmin(content){
 
 function setKoTeam(slot,val){ if(!ST.koTeams) ST.koTeams={}; ST.koTeams[slot]=val; saveSt(ST); }
 function setRes(mid,side,val){ if(!ST.results[mid]) ST.results[mid]={}; ST.results[mid][side==='H'?'h':'a']=val; saveSt(ST); }
-function saveAll(){ saveSt(ST); showToast('✅ Todo guardado correctamente'); setTimeout(render,300); }
+
+async function saveAll(){
+
+  saveSt(ST);
+
+  const results =
+    Object.entries(ST.results)
+      .map(([matchId,r])=>({
+
+        matchId,
+
+        h:r.h,
+
+        a:r.a
+
+      }));
+
+  try{
+
+    await fetch(API_URL,{
+
+      method:'POST',
+
+      body:JSON.stringify({
+
+        action:'saveResults',
+
+        results
+
+      })
+
+    });
+
+    showToast('✅ Resultados sincronizados');
+
+  }catch(err){
+
+    console.error(err);
+
+    showToast('❌ Error al sincronizar');
+
+  }
+
+  setTimeout(render,300);
+
+}
 function removeUser(name){ if(!confirm('¿Eliminar a '+name+'?')) return; ST.users=ST.users.filter(u=>u!==name); delete ST.predictions[name]; saveSt(ST); render(); }
 function doAdminLogout(){ ADMIN=false; sessionStorage.removeItem('sp_admin'); render(); }
 
@@ -757,6 +813,111 @@ function doAdminLogin(){
   else{ document.getElementById('adminErr').style.display='block'; document.getElementById('adminErr').textContent='Contraseña incorrecta'; }
 }
 
+async function syncCloudData(){
+
+  try{
+
+    // Resultados oficiales
+    const resultsReq =
+      await fetch(API_URL + '?action=loadResults');
+
+    const results =
+      await resultsReq.json();
+
+    ST.results = {};
+
+    if(Array.isArray(results)){
+
+      results.slice(1).forEach(r=>{
+
+        ST.results[r[0]] = {
+          h:Number(r[1]),
+          a:Number(r[2])
+        };
+
+      });
+
+    }
+
+    // Participantes
+    const usersReq =
+      await fetch(API_URL + '?action=loadParticipants');
+
+    const users =
+      await usersReq.json();
+
+    if(Array.isArray(users)){
+
+      ST.users =
+        users.slice(1)
+             .map(r=>r[0])
+             .filter(Boolean);
+
+    }
+ 
+    await syncAllPredictions();
+
+    saveSt(ST);
+
+  }catch(err){
+
+    console.error('syncCloudData',err);
+
+  }
+
+}
+
+async function syncAllPredictions(){
+
+  try{
+
+    const req =
+      await fetch(
+        API_URL +
+        '?action=loadAllPredictions'
+      );
+
+    const rows = await req.json();
+
+    ST.predictions = {};
+
+    if(Array.isArray(rows)){
+
+      rows.slice(1).forEach(r=>{
+
+        const user = r[0];
+        const matchId = r[1];
+
+        if(!user || !matchId) return;
+
+        if(!ST.predictions[user]){
+          ST.predictions[user] = {};
+        }
+
+        ST.predictions[user][matchId] = {
+
+          result:r[2],
+
+          scoreH:r[3],
+
+          scoreA:r[4]
+
+        };
+
+      });
+
+    }
+
+    saveSt(ST);
+
+  }catch(err){
+
+    console.error(err);
+
+  }
+
+}
+  
 window.doLogin=doLogin; window.doLogout=doLogout; window.setPredR=setPredR;
 window.setPredScore=setPredScore; window.savePreds=savePreds; window.syncToSheets=syncToSheets;
 window.setKoTeam=setKoTeam; window.setRes=setRes; window.saveAll=saveAll;
