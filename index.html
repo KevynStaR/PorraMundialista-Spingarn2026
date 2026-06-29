@@ -87,7 +87,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--txt);min-he
 .flag-emoji{font-size:22px;line-height:1;flex-shrink:0}
 .tname{font-size:12px;font-weight:600;color:var(--txt);line-height:1.2}
 .tname.right{text-align:right}
-.center-col{display:flex;flex-direction:column;align-items:center;gap:6px}
+.center-col{display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center}
 .result-btns{display:flex;gap:4px}
 .rbtn{width:30px;height:26px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.04);color:var(--txt2);font-family:'Inter',sans-serif;transition:all 0.15s}
 .rbtn:hover{border-color:var(--txt2);color:var(--txt)}
@@ -104,6 +104,41 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--txt);min-he
   text-align:center;
   font-size:11px;
   font-weight:700;
+.classify-box{
+  margin-top:10px;
+  width:100%;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:6px;
+}
+}
+.classify-title{
+  font-size:10px;
+  color:var(--txt2);
+  font-weight:700;
+  letter-spacing:1px;
+  text-transform:uppercase;
+  text-align:center;
+}
+.classify-buttons{
+  display:flex;
+  justify-content:center;
+  gap:10px;
+}
+.classify-buttons .rbtn{
+  width:44px;
+  height:44px;
+  border-radius:12px;
+  font-size:20px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  transition:all .2s ease;
+}
+.classify-buttons .rbtn:hover{
+  transform:translateY(-2px);
+  box-shadow:0 6px 18px rgba(194,24,91,0.25);
 }
 
 button:disabled,
@@ -192,7 +227,7 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
 <script>
 const SKEY='spingarn_polla2026v5';
 const SHEET_ID='1Ilu6MbqXPi9HhoIMw5yZzmznJ82cHtKxy8FiOlV8XF4';
-const API_URL='https://script.google.com/macros/s/AKfycbxKNWNwklF2VWertF_iLVhI_w7LNh6D-PSHD7Ghfff6Yk7_0DbxbH9QNEIewh1hIL8pzg/exec';
+const API_URL='https://script.google.com/macros/s/AKfycbxgx-HS9prF-6-81iUYXiqz9oaaDQ7d60qPfr5HgC82OV2kwyITe86KG9aoqUuLYzstBQ/exec';
 const ADMIN_PASS='Spingarn2026#';
 
 const COUNTRY_FLAGS = {
@@ -241,7 +276,7 @@ function buildMatches() {
     {id:'r64_4',phase:'16vos de Final',group:'',home:'Países Bajos',away:'Marruecos',date:'29 Jun'},
     {id:'r64_5',phase:'16vos de Final',group:'',home:'Costa de Marfil',away:'Noruega',date:'30 Jun'},
     {id:'r64_6',phase:'16vos de Final',group:'',home:'Francia',away:'Suecia',date:'30 Jun'},
-    {id:'64_7',phase:'16vos de Final',group:'',home:'México',away:'Ecuador',date:'30 Jun'},
+    {id:'r64_7',phase:'16vos de Final',group:'',home:'México',away:'Ecuador',date:'30 Jun'},
     {id:'r64_8',phase:'16vos de Final',group:'',home:'Inglaterra',away:'RD Congo',date:'1 Jul'},
     {id:'r64_9',phase:'16vos de Final',group:'',home:'Bélgica',away:'Senegal',date:'1 Jul'},
     {id:'r64_10',phase:'16vos de Final',group:'',home:'Estados Unidos',away:'Bosnia y Herzegovina',date:'1 Jul'},
@@ -249,7 +284,7 @@ function buildMatches() {
     {id:'r64_12',phase:'16vos de Final',group:'',home:'Portugal',away:'Croacia',date:'2 Jul'},
     {id:'r64_13',phase:'16vos de Final',group:'',home:'Suiza',away:'Argelia',date:'2 Jul'},
     {id:'r64_14',phase:'16vos de Final',group:'',home:'Australia',away:'Egipto',date:'3 Jul'},
-    {id:'64_15',phase:'16vos de Final',group:'',home:'Argentina',away:'Cabo Verde',date:'3 Jul'},
+    {id:'r64_15',phase:'16vos de Final',group:'',home:'Argentina',away:'Cabo Verde',date:'3 Jul'},
     {id:'r64_16',phase:'16vos de Final',group:'',home:'Colombia',away:'Ghana',date:'3 Jul'},
 {id:'r32_1',phase:'Octavos de Final',group:'',home:'1A',away:'2B',date:'4 Jul'},
     {id:'r32_2',phase:'Octavos de Final',group:'',home:'1C',away:'2D',date:'4 Jul'},
@@ -324,8 +359,37 @@ function calcPts(uid){
     const res=ST.results[m.id]; const pred=up[m.id];
     if(pred&&(pred.result||pred.scoreH!==undefined)) preds++;
     if(!res||!pred) return;
-    const rr=calcResult(res.h,res.a);
-    if(pred.result&&pred.result===rr){pts+=2;correct++;}
+    const isKO =
+    m.id.startsWith('r64_') ||
+    m.id.startsWith('r32_') ||
+    m.id.startsWith('qf_') ||
+    m.id.startsWith('sf_') ||
+    m.id==='trd' ||
+    m.id==='fin';
+
+const rr = calcResult(res.h,res.a);
+
+if(isKO){
+
+    if(
+        pred.clasifica &&
+        pred.clasifica===res.clasifica
+    ){
+        pts+=2;
+        correct++;
+    }
+
+}else{
+
+    if(
+        pred.result &&
+        pred.result===rr
+    ){
+        pts+=2;
+        correct++;
+    }
+
+}
     if(pred.scoreH!==undefined&&pred.scoreA!==undefined&&parseInt(pred.scoreH)===parseInt(res.h)&&parseInt(pred.scoreA)===parseInt(res.a)){pts+=2;exact++;}
   });
   return{pts,correct,exact,preds};
@@ -335,8 +399,35 @@ function calcMatchPts(uid,mid){
   const res=ST.results[mid]; const pred=(ST.predictions[uid]||{})[mid];
   if(!res||!pred) return 0;
   let p=0;
-  const rr=calcResult(res.h,res.a);
-  if(pred.result&&pred.result===rr) p+=2;
+  const isKO =
+    mid.startsWith('r64_') ||
+    mid.startsWith('r32_') ||
+    mid.startsWith('qf_') ||
+    mid.startsWith('sf_') ||
+    mid==='trd' ||
+    mid==='fin';
+
+const rr=calcResult(res.h,res.a);
+
+if(isKO){
+
+    if(
+        pred.clasifica &&
+        pred.clasifica===res.clasifica
+    ){
+        p+=2;
+    }
+
+}else{
+
+    if(
+        pred.result &&
+        pred.result===rr
+    ){
+        p+=2;
+    }
+
+}
   if(pred.scoreH!==undefined&&pred.scoreA!==undefined&&parseInt(pred.scoreH)===parseInt(res.h)&&parseInt(pred.scoreA)===parseInt(res.a)) p+=2;
   return p;
 }
@@ -458,7 +549,8 @@ async function doLogin(){
       ST.predictions[name][row[1]] = {
         result: row[2],
         scoreH: row[3],
-        scoreA: row[4]
+        scoreA: row[4],
+        clasifica: row[5] || ''
       };
 
     });
@@ -537,6 +629,14 @@ function renderPredict(content){
   const blocked =
     ST.blockedMatches.includes(m.id);
 
+  const isKO =
+  m.id.startsWith('r64_') ||
+  m.id.startsWith('r32_') ||
+  m.id.startsWith('qf_') ||
+  m.id.startsWith('sf_') ||
+  m.id === 'trd' ||
+  m.id === 'fin';
+
   const hName=resolveTeam(m.home),
         aName=resolveTeam(m.away);
         const hFlag=getFlag(hName), aFlag=getFlag(aName);
@@ -565,10 +665,50 @@ ${blocked ? `
               <button class="rbtn${pred.result==='D'?' sel-D':''}" ${blocked?'disabled':''} onclick="setPredR('${m.id}','D',this)" title="Empate">E</button>
               <button class="rbtn${pred.result==='A'?' sel-A':''}" ${blocked?'disabled':''} onclick="setPredR('${m.id}','A',this)" title="Gana Visitante">V</button>
             </div>
-            <div class="score-wrap">
-              <input type="number" ${blocked?'disabled':''} min="0" max="20" value="${pred.scoreH!==undefined?pred.scoreH:''}" placeholder="0" oninput="setPredScore('${m.id}','H',this.value)" />
-              <input type="number" ${blocked?'disabled':''} min="0" max="20" value="${pred.scoreA!==undefined?pred.scoreA:''}" placeholder="0" oninput="setPredScore('${m.id}','A',this.value)" /></div>
-            ${ptsLbl?`<span class="pts-pill ${ptsCls}">${ptsLbl}</span>`:'<span style="font-size:10px;color:var(--txt3)">${m.date}</span>'}
+  <div class="score-wrap">
+  <input type="number" ${blocked?'disabled':''} min="0" max="20"
+    value="${pred.scoreH!==undefined?pred.scoreH:''}"
+    placeholder="0"
+    oninput="setPredScore('${m.id}','H',this.value)" />
+
+  <input type="number" ${blocked?'disabled':''} min="0" max="20"
+    value="${pred.scoreA!==undefined?pred.scoreA:''}"
+    placeholder="0"
+    oninput="setPredScore('${m.id}','A',this.value)" />
+</div>
+
+${isKO ? `
+<div class="classify-box">
+
+  <div class="classify-title">
+    🏆 ¿Quién clasifica?
+  </div>
+
+  <div class="classify-buttons">
+
+    <button
+      class="rbtn${pred.clasifica==='H'?' sel-H':''}"
+      ${blocked?'disabled':''}
+      onclick="setClasifica('${m.id}','H',this)">
+      ${hFlag}
+    </button>
+
+    <button
+      class="rbtn${pred.clasifica==='A'?' sel-A':''}"
+      ${blocked?'disabled':''}
+      onclick="setClasifica('${m.id}','A',this)">
+      ${aFlag}
+    </button>
+
+  </div>
+
+</div>
+` : ''}
+
+${ptsLbl
+  ? `<span class="pts-pill ${ptsCls}">${ptsLbl}</span>`
+  : `<span style="font-size:10px;color:var(--txt3)">${m.date}</span>`
+}
           </div>
           <div class="team-side right">
             <span style="font-size:26px;line-height:1">${aFlag}</span>
@@ -594,6 +734,32 @@ function setPredR(mid, val, btn){
   btn.className='rbtn sel-'+val;
 }
 
+function setClasifica(mid,val,btn){
+
+  if(!ST.predictions[CU])
+    ST.predictions[CU]={};
+
+  if(!ST.predictions[CU][mid])
+    ST.predictions[CU][mid]={};
+
+  ST.predictions[CU][mid].clasifica = val;
+
+  saveSt(ST);
+
+  btn
+    .closest('.classify-buttons')
+    .querySelectorAll('.rbtn')
+    .forEach(b=>{
+
+      b.classList.remove('sel-H');
+      b.classList.remove('sel-A');
+
+    });
+
+  btn.classList.add('sel-'+val);
+
+}
+  
 function setPredScore(mid, side, val){
   if(!ST.predictions[CU]) ST.predictions[CU]={};
   if(!ST.predictions[CU][mid]) ST.predictions[CU][mid]={};
@@ -658,7 +824,8 @@ if(btn){
         matchId,
         result:p.result ?? '',
         scoreH:p.scoreH ?? '',
-        scoreA:p.scoreA ?? ''
+        scoreA:p.scoreA ?? '',
+        clasifica:p.clasifica ?? ''
       }))
     };
 
@@ -823,15 +990,77 @@ function renderAdmin(content){
       const res=ST.results[m.id]||{};
       const hName=resolveTeam(m.home), aName=resolveTeam(m.away);
       const hFlag=getFlag(hName), aFlag=getFlag(aName);
-      const row=document.createElement('div'); row.className='admin-row';
-      row.innerHTML=`<span style="font-size:12px">${hFlag} ${hName}</span>
-        <div class="ri">
-          <input type="number" min="0" max="20" value="${res.h!==undefined?res.h:''}" placeholder="–" oninput="setRes('${m.id}','H',this.value)" />
-          <span style="color:var(--txt3);font-size:12px">–</span>
-          <input type="number" min="0" max="20" value="${res.a!==undefined?res.a:''}" placeholder="–" oninput="setRes('${m.id}','A',this.value)" />
-        </div>
-        <span style="font-size:12px;text-align:right">${aName} ${aFlag}</span>
-        <div class="status-dot${res.h!==undefined?' done':''}"></div>`;
+      const isKO =
+  m.id.startsWith('r64_') ||
+  m.id.startsWith('r32_') ||
+  m.id.startsWith('qf_') ||
+  m.id.startsWith('sf_') ||
+  m.id==='trd' ||
+  m.id==='fin';
+
+const row=document.createElement('div');
+row.className='admin-row';
+
+row.innerHTML=`
+
+<span style="font-size:12px">
+${hFlag} ${hName}
+</span>
+
+<div class="ri">
+
+<input
+type="number"
+min="0"
+max="20"
+value="${res.h!==undefined?res.h:''}"
+placeholder="–"
+oninput="setRes('${m.id}','H',this.value)" />
+
+<span style="color:var(--txt3)">-</span>
+
+<input
+type="number"
+min="0"
+max="20"
+value="${res.a!==undefined?res.a:''}"
+placeholder="–"
+oninput="setRes('${m.id}','A',this.value)" />
+
+</div>
+
+<span style="font-size:12px;text-align:right">
+${aName} ${aFlag}
+</span>
+
+<div class="status-dot${res.h!==undefined?' done':''}"></div>
+
+${isKO?`
+
+<div style="
+grid-column:1 / -1;
+display:flex;
+justify-content:center;
+gap:8px;
+margin-top:6px;
+">
+
+<button
+class="rbtn${res.clasifica==='H'?' sel-H':''}"
+onclick="setResClasifica('${m.id}','H',this)">
+${hFlag}
+</button>
+
+<button
+class="rbtn${res.clasifica==='A'?' sel-A':''}"
+onclick="setResClasifica('${m.id}','A',this)">
+${aFlag}
+</button>
+
+</div>
+
+`:''}
+`;
       card.appendChild(row);
     });
     content.appendChild(card);
@@ -865,6 +1094,28 @@ function renderAdmin(content){
 
 function setKoTeam(slot,val){ if(!ST.koTeams) ST.koTeams={}; ST.koTeams[slot]=val; saveSt(ST); }
 function setRes(mid,side,val){ if(!ST.results[mid]) ST.results[mid]={}; ST.results[mid][side==='H'?'h':'a']=val; saveSt(ST); }
+function setResClasifica(mid,val,btn){
+
+  if(!ST.results[mid])
+    ST.results[mid]={};
+
+  ST.results[mid].clasifica = val;
+
+  saveSt(ST);
+
+  btn
+    .parentElement
+    .querySelectorAll('.rbtn')
+    .forEach(b=>{
+
+      b.classList.remove('sel-H');
+      b.classList.remove('sel-A');
+
+    });
+
+  btn.classList.add('sel-'+val);
+
+}
 
 async function saveAll(){
 
@@ -878,7 +1129,9 @@ async function saveAll(){
 
         h:r.h,
 
-        a:r.a
+        a:r.a,
+
+        clasifica: r.clasifica ?? ''
 
       }));
 
@@ -952,7 +1205,8 @@ async function syncCloudData(){
 
         ST.results[r[0]] = {
           h:Number(r[1]),
-          a:Number(r[2])
+          a:Number(r[2]),
+          clasifica: r[3] || ''
         };
 
       });
@@ -1027,7 +1281,9 @@ async function syncAllPredictions(){
 
           scoreH:r[3],
 
-          scoreA:r[4]
+          scoreA:r[4],
+
+          clasifica: r[5] || ''
 
         };
 
